@@ -17,24 +17,38 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
-
+import Path from pathlib
 
 # ---------------------------------------------------------------------
 # Data / image loaders
 # ---------------------------------------------------------------------
 
 # You can adjust these paths to match your local environment.
+
+
+BASE_DIR = Path(__file__).resolve().parent
+
 IMAGE_CANDIDATES = [
-    "https://github.com/tjluo-ucas/data-science/blob/main/california.png",
-    "images/end_to_end_project/california.png",
-    "/Users/abc/handson-ml2/images/end_to_end_project/california.png",
+    BASE_DIR / "california.png",
+    BASE_DIR / "images" / "end_to_end_project" / "california.png",
 ]
 
 HOUSING_CSV_CANDIDATES = [
-    "https://github.com/tjluo-ucas/data-science/blob/main/housing.csv",
-    "datasets/housing/housing.csv",
-    "/Users/abc/handson-ml2/datasets/housing/housing.csv",
+    BASE_DIR / "housing.csv",
+    BASE_DIR / "datasets" / "housing" / "housing.csv",
 ]
+
+# IMAGE_CANDIDATES = [
+#     "https://github.com/tjluo-ucas/data-science/blob/main/california.png",
+#     "images/end_to_end_project/california.png",
+#     "/Users/abc/handson-ml2/images/end_to_end_project/california.png",
+# ]
+
+# HOUSING_CSV_CANDIDATES = [
+#     "https://github.com/tjluo-ucas/data-science/blob/main/housing.csv",
+#     "datasets/housing/housing.csv",
+#     "/Users/abc/handson-ml2/datasets/housing/housing.csv",
+# ]
 
 
 def _find_first_existing_path(candidates):
