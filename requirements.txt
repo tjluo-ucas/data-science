@@ -1,2 +1,5 @@
-
-streamlit>=1.28.0
+streamlit
+scikit-learn
+pandas
+numpy
+joblib
