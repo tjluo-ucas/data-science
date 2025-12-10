@@ -1,0 +1,1 @@
+This platform serves as a dedicated resource center for students enrolled in the UCAS Data Science course, providing comprehensive lecture notes and exercises. To maximize your learning, we encourage active participation in weekly class discussions and thorough engagement with the corresponding exercises.
