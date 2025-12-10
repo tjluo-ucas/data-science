@@ -1,26 +1,70 @@
-# import streamlit as st
-
-# st.title("🎯 My First Auto-Deployed App--Test")
-# st.write("From VSCode to Cloud in 3 Steps!")
-
-# name = st.text_input("Enter your name:")
-# if name:
-#   st.success(f"Hello {name}! App deployed successfully!")
-
+# pip install streamlit joblib scikit-learn pandas numpy matplotlib
+# streamlit run app.py
 """
 California Housing Price Prediction Demo
 Based on a RandomForestRegressor model
 """
 
 import warnings
+
 warnings.filterwarnings("ignore")
 
+import os
+
 import joblib
+import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
 
 
+# ---------------------------------------------------------------------
+# Data / image loaders
+# ---------------------------------------------------------------------
+
+# You can adjust these paths to match your local environment.
+IMAGE_CANDIDATES = [
+    "california.png",
+    "images/end_to_end_project/california.png",
+    "/Users/abc/handson-ml2/images/end_to_end_project/california.png",
+]
+
+HOUSING_CSV_CANDIDATES = [
+    "housing.csv",
+    "datasets/housing/housing.csv",
+    "/Users/abc/handson-ml2/datasets/housing/housing.csv",
+]
+
+
+def _find_first_existing_path(candidates):
+    for p in candidates:
+        if os.path.exists(p):
+            return p
+    return None
+
+
+@st.cache_data
+def load_california_image():
+    """Load background image of California map (if available)."""
+    path = _find_first_existing_path(IMAGE_CANDIDATES)
+    if path is None:
+        return None
+    return mpimg.imread(path)
+
+
+@st.cache_data
+def load_housing_data():
+    """Load original housing dataset (for background scatter)."""
+    path = _find_first_existing_path(HOUSING_CSV_CANDIDATES)
+    if path is None:
+        return None
+    return pd.read_csv(path)
+
+
+# ---------------------------------------------------------------------
+# Model
+# ---------------------------------------------------------------------
 class HousingPricePredictor:
     """California housing price predictor."""
 
@@ -82,7 +126,8 @@ class HousingPricePredictor:
                 print(f"✅ Feature info loaded from {self.feature_info_path}")
             except Exception as e:
                 print(
-                    f"⚠ Feature info file not found or invalid. Using default features. Detail: {e}"
+                    f"⚠ Feature info file not found or invalid. "
+                    f"Using default features. Detail: {e}"
                 )
 
         except Exception as e:
@@ -238,6 +283,89 @@ def get_predictor():
     return HousingPricePredictor()
 
 
+# ---------------------------------------------------------------------
+# Plotting: draw predicted house on California map
+# ---------------------------------------------------------------------
+def plot_house_on_map(
+    longitude: float,
+    latitude: float,
+    price: float | None = None,
+    housing_df: pd.DataFrame | None = None,
+    background_img=None,
+):
+    """Create a matplotlib figure with background scatter + predicted house."""
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    # 1. Background image
+    if background_img is not None:
+        ax.imshow(
+            background_img,
+            extent=[-124.55, -113.80, 32.45, 42.05],  # left, right, bottom, top
+            alpha=0.5,
+            aspect="auto",
+            zorder=0,
+        )
+
+    # 2. Background scatter of all houses
+    if housing_df is not None:
+        scatter = ax.scatter(
+            x=housing_df["longitude"],
+            y=housing_df["latitude"],
+            s=housing_df["population"] / 100,
+            c=housing_df["median_house_value"],
+            cmap="jet",
+            alpha=0.4,
+            edgecolors="none",
+            zorder=1,
+        )
+
+        prices = housing_df["median_house_value"]
+        tick_values = np.linspace(prices.min(), prices.max(), 11)
+        cbar = fig.colorbar(scatter, ax=ax, ticks=tick_values)
+        cbar.ax.set_yticklabels([f"${int(v/1000)}k" for v in tick_values])
+        cbar.set_label("Median House Value", fontsize=12)
+
+    # 3. The predicted house
+    ax.scatter(
+        [longitude],
+        [latitude],
+        color="red",
+        edgecolors="black",
+        s=200,
+        marker="*",
+        label="Predicted house",
+        zorder=3,
+    )
+
+    label = "Predicted house"
+    if price is not None:
+        label += f"\n${price:,.0f}"
+
+    ax.annotate(
+        label,
+        xy=(longitude, latitude),
+        xytext=(5, 5),
+        textcoords="offset points",
+        fontsize=10,
+        bbox=dict(boxstyle="round,pad=0.2", fc="white", alpha=0.8),
+        zorder=4,
+    )
+
+    # 4. Axes and title
+    ax.set_xlim(-124.55, -113.80)
+    ax.set_ylim(32.45, 42.05)
+    ax.set_xlabel("Longitude")
+    ax.set_ylabel("Latitude")
+    ax.set_title("California Housing Prices and Predicted House", fontsize=14)
+    ax.legend(loc="upper right")
+
+    fig.tight_layout()
+    return fig
+
+
+# ---------------------------------------------------------------------
+# Streamlit UI
+# ---------------------------------------------------------------------
 def main():
     st.set_page_config(
         page_title="California Housing Price Predictor",
@@ -360,6 +488,21 @@ def main():
 
                 with st.expander("Show input features"):
                     st.json(input_sample)
+
+                # --- NEW: draw the predicted house on the California map ---
+                st.subheader("Predicted House Location on California Map")
+
+                background_img = load_california_image()
+                housing_df = load_housing_data()
+
+                fig = plot_house_on_map(
+                    longitude=longitude,
+                    latitude=latitude,
+                    price=prediction,
+                    housing_df=housing_df,
+                    background_img=background_img,
+                )
+                st.pyplot(fig)
             else:
                 st.error("Prediction failed. Please check your inputs or model files.")
 
